@@ -4,6 +4,7 @@ services:
   mcp-server:
     build:
       context: ./mcp_server
+      dockerfile: mcp.Dockerfile
     networks:
       - mcp-network
     # No se expone ningún puerto (acceso solo interno)
@@ -16,6 +17,7 @@ services:
   fastapi-server:
     build:
       context: ./fastapi_server
+      dockerfile: main.Dockerfile
     ports:
       - "9000:8001"  # Expone 8001 interno como 8000 en host
     networks:
