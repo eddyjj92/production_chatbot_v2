@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: ./mcp_server
+    networks:
+      - mcp-network
+    # No se expone ningún puerto (acceso solo interno)
+    environment:
+      - PORT=8000
+    env_file:
+      - .env
+    restart: always
+
+  fastapi-server:
+    build:
+      context: ./fastapi_server
+    ports:
+      - "9000:8001"  # Expone 8001 interno como 8000 en host
+    networks:
+      - mcp-network
+    depends_on:
+      - mcp-server
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8000
+    env_file:
+      - .env
+    restart: always
+
+networks:
+  mcp-network:
+    driver: bridge
