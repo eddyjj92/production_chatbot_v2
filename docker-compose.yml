@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mcp-server:
     build:
-      context: ./mcp_server
+      context: .
       dockerfile: mcp.Dockerfile
     networks:
       - mcp-network
@@ -16,7 +16,7 @@ services:
 
   fastapi-server:
     build:
-      context: ./fastapi_server
+      context: .
       dockerfile: main.Dockerfile
     ports:
       - "9000:8001"  # Expone 8001 interno como 8000 en host
