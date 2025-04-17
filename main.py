@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     app.state.client = await MultiServerMCPClient({
         "mcp": {
             # make sure you start your weather server on port 8000
-            "url": MCP_SERVER_URL,
+            "url": f"{MCP_SERVER_URL}/sse",
             "transport": "sse"
         }
     }).__aenter__()
