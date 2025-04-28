@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -9,7 +10,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from contextlib import asynccontextmanager
+from redis import Redis
 
+# Conexión a Redis
+redis = Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 # Cargar variables de entorno
 load_dotenv()
@@ -107,7 +111,18 @@ async def chat(req: MessageRequest, request: Request):
         ai_msg = response["messages"][-1]
         session_histories[session_id].append(ai_msg)
 
-        return {"response": ai_msg.content}
+        result = None
+        if response["messages"][-2].type == "tool" and response["messages"][-2].content:
+            raw_places = redis.get('places')
+
+            if raw_places:
+                result = json.loads(raw_places)
+                redis.delete('places')
+
+        return {
+            "response": ai_msg.content,
+            "result": result
+        }
 
     except Exception as e:
         return {"error": str(e)}

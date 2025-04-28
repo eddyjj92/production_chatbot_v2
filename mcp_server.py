@@ -1,3 +1,4 @@
+import json
 from typing import  Any
 
 from mcp.server.fastmcp import FastMCP
@@ -6,6 +7,10 @@ from pydantic import Field
 import uuid
 from dotenv import load_dotenv
 import os
+from redis import Redis
+
+# Conexión a Redis
+redis = Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 load_dotenv()
 DEVELOPMENT = os.getenv("DEVELOPMENT")
@@ -35,14 +40,14 @@ def recomendar_lugares(
     cuerpo = {
         "textQuery": consulta,
         "includedType": categoria,
-        "pageSize": 5
+        "pageSize": 20
     }
 
     # Encabezados de la solicitud
     encabezados = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,  # Reemplaza con tu clave de API
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location"
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.id,places.photos,places.regularOpeningHours.weekdayDescriptions,places.editorialSummary',
     }
 
     # Realizar la solicitud POST
@@ -77,6 +82,8 @@ def recomendar_lugares(
 
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
+
+    redis.set('places', json.dumps(datos["places"]))
 
     return nombres_lugares
 
