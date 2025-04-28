@@ -10,7 +10,7 @@ import os
 from redis import Redis
 
 # Conexión a Redis
-redis = Redis(host='localhost', port=6379, db=0, decode_responses=True)
+redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True)
 
 load_dotenv()
 DEVELOPMENT = os.getenv("DEVELOPMENT")
