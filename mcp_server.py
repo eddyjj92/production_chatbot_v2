@@ -51,6 +51,7 @@ def recomendar_lugares(
     - Un mensaje de error si la solicitud a la API falla o si no se encuentran lugares que coincidan.
     """
 
+    print(f"""Query: {query}""")
     # Definir el cuerpo de la solicitud
     cuerpo = {
         "textQuery": query,
@@ -77,9 +78,6 @@ def recomendar_lugares(
 
     datos = respuesta.json()
     print(datos)
-
-    # Obtener el primer lugar encontrado
-    lugar = datos["places"][0]
 
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
