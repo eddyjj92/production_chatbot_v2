@@ -9,12 +9,14 @@ from dotenv import load_dotenv
 import os
 from redis import Redis
 
-# Conexión a Redis
-redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True, password="Clapzy.2025/*-")
-
 load_dotenv()
 DEVELOPMENT = os.getenv("DEVELOPMENT")
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
+# Conexión a Redis
+redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True, password=REDIS_PASSWORD)
 
 if DEVELOPMENT == 'True':
     # Configuración de proxy si es necesario
@@ -69,7 +71,7 @@ def recomendar_lugares(
     encabezados = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,  # Reemplaza con tu clave de API
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.id,places.photos,places.regularOpeningHours.weekdayDescriptions,places.editorialSummary',
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.id,places.photos,places.regularOpeningHours.weekdayDescriptions,places.editorialSummary,places.internationalPhoneNumber',
     }
 
     # Realizar la solicitud POST

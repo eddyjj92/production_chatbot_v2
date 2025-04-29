@@ -12,17 +12,19 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from contextlib import asynccontextmanager
 from redis import Redis
 
-# Conexión a Redis
-redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True, password="Clapzy.2025/*-")
-
 # Cargar variables de entorno
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEVELOPMENT = os.getenv("DEVELOPMENT")
-openai_proxy = None
+OPENAI_PROXY = None
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
+# Conexión a Redis
+redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True, password=REDIS_PASSWORD)
 
 if DEVELOPMENT == 'True':
-    openai_proxy = "http://localhost:5000"
+    OPENAI_PROXY = "http://localhost:5000"
 
 # Configurar el modelo
 model = ChatOpenAI(
@@ -30,7 +32,7 @@ model = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.5,
     top_p=0.9,
-    openai_proxy=openai_proxy
+    openai_proxy=OPENAI_PROXY
 )
 
 # Prompt inicial
