@@ -1,5 +1,5 @@
 import json
-from typing import  Any
+from typing import Any, Union, List
 
 from mcp.server.fastmcp import FastMCP
 import requests
@@ -26,20 +26,34 @@ mcp = FastMCP("mcp")
 
 @mcp.tool()
 def recomendar_lugares(
-        area: str = Field(..., description="Área donde el usuario desea hacer la reserva."),
-        categoria: str = Field(..., description="Categoría del lugar, por ejemplo, 'bar', 'restaurant', etc."),
-) -> str | list[str] | list[Any]:
+    query: str = Field(
+        ...,
+        description=(
+            "Cadena de texto que describe la intención del usuario, incluyendo "
+            "el tipo de lugar, actividad, compañía y ubicación. "
+            "Por ejemplo: 'Quiero cenar sushi con mi pareja en Barcelona'. "
+            "Esta consulta se utiliza directamente como 'textQuery' en la solicitud "
+            "a la API de Google Places Text Search."
+        )
+    ),
+) -> Union[str, List[str], List[Any]]:
     """
-    Realiza una búsqueda de lugares en una categoría específica dentro de un área determinada
-    utilizando la API de Google Places y devuelve la información del primer resultado encontrado.
+    Realiza una búsqueda de lugares basada en la consulta proporcionada por el usuario,
+    utilizando la API de Google Places Text Search, y devuelve una lista de nombres de lugares encontrados.
+
+    Parámetros:
+    - query (str): Cadena de texto que describe la intención del usuario, incluyendo
+      el tipo de lugar, actividad, compañía y ubicación. Esta consulta se utiliza directamente
+      como 'textQuery' en la solicitud a la API de Google Places Text Search.
+
+    Retorna:
+    - Una lista de nombres de lugares encontrados que coinciden con la consulta del usuario.
+    - Un mensaje de error si la solicitud a la API falla o si no se encuentran lugares que coincidan.
     """
-    # Construir la consulta de texto
-    consulta = f"{categoria} en {area}"
 
     # Definir el cuerpo de la solicitud
     cuerpo = {
-        "textQuery": consulta,
-        "includedType": categoria,
+        "textQuery": query,
         "pageSize": 20
     }
 
@@ -64,21 +78,8 @@ def recomendar_lugares(
     datos = respuesta.json()
     print(datos)
 
-    # Verificar si se encontraron lugares
-    if "places" not in datos or not datos["places"]:
-        return f"No se encontraron lugares de tipo '{categoria}' en el área '{area}'."
-
     # Obtener el primer lugar encontrado
     lugar = datos["places"][0]
-    nombre_lugar = lugar["displayName"]["text"]
-    direccion = lugar.get("formattedAddress", "Dirección no disponible")
-
-    # Generar un ID de reserva único
-    id_reserva = uuid.uuid4()
-
-    # Verificar si se encontraron lugares
-    if "places" not in datos or not datos["places"]:
-        return [f"No se encontraron lugares de tipo '{categoria}' en el área '{area}'."]
 
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
