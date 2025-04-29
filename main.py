@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from redis import Redis
 
 # Conexión a Redis
-redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True)
+redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True, password="Clapzy.2025/*-")
 
 # Cargar variables de entorno
 load_dotenv()
@@ -34,7 +34,7 @@ model = ChatOpenAI(
 )
 
 # Prompt inicial
-system_prompt = """
+system_prompt = lambda session_id: (f"""
 Eres un asistente cálido y amigable, especializado en ayudar a personas a encontrar bares, restaurantes y lugares para salir. Da recomendaciones personalizadas y haz preguntas si necesitas más detalles.
 Cuando el usuario mencione un tipo de lugar o actividad (por ejemplo, "bares con terraza en Madrid" o "restaurantes italianos en Roma"), utiliza la herramienta de búsqueda de texto de la API de Google Places para encontrar lugares relevantes. 
 Cuando el usuario mencione con quien quiere salir "quiero salir con mi novia", tenlo en cuanta a la hora de pasar el parametro query en la herramienta de búsqueda de texto de la API de Google Places para encontrar lugares relevantes.
@@ -43,7 +43,8 @@ Después de obtener los resultados, analiza la lista de lugares devueltos y sele
 Si puedes usar herramientas para mejorar tus respuestas, hazlo con confianza.
 Se breve en tus respuestas y no inventes informacion que no hallas obtenido de herramientas.
 Se creativo a la hora de pasar el parametro 'query' a la api de google places textSearch.
-"""
+Usa el session_id: {session_id} si te hace falta para una tool.
+""")
 
 # Memoria por sesión
 session_histories = {}
@@ -97,7 +98,7 @@ async def chat(req: MessageRequest, request: Request):
 
     # Inicializar historial si no existe
     if session_id not in session_histories:
-        session_histories[session_id] = [SystemMessage(content=system_prompt)]
+        session_histories[session_id] = [SystemMessage(content=system_prompt(session_id))]
 
     # Añadir el mensaje del usuario
     history = session_histories[session_id]
@@ -118,16 +119,20 @@ async def chat(req: MessageRequest, request: Request):
 
         result = None
         if response["messages"][-2].type == "tool" and response["messages"][-2].content:
-            raw_places = redis.get('places')
+            raw_places = redis.get(session_id)
 
             if raw_places:
                 result = json.loads(raw_places)
-                redis.delete('places')
+                redis.delete(session_id)
+
+        print(f"""Result: {result}""")
 
         return {
             "response": ai_msg.content,
-            "result": result
+            "result": result,
+            "tool": response["messages"][-2]
         }
+
 
     except Exception as e:
         return {"error": str(e)}

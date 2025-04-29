@@ -10,7 +10,7 @@ import os
 from redis import Redis
 
 # Conexión a Redis
-redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True)
+redis = Redis(host='82.29.197.144', port=6379, db=0, decode_responses=True, password="Clapzy.2025/*-")
 
 load_dotenv()
 DEVELOPMENT = os.getenv("DEVELOPMENT")
@@ -27,7 +27,6 @@ mcp = FastMCP("mcp")
 @mcp.tool()
 def recomendar_lugares(
     query: str = Field(
-        ...,
         description=(
             "Cadena de texto que describe la intención del usuario, incluyendo "
             "el tipo de lugar, actividad, compañía y ubicación. "
@@ -36,6 +35,11 @@ def recomendar_lugares(
             "a la API de Google Places Text Search."
         )
     ),
+    session_id: str = Field(
+            description=(
+                "Cadena de texto para usar como clave en la base de datos de redis"
+            )
+        ),
 ) -> Union[str, List[str], List[Any]]:
     """
     Realiza una búsqueda de lugares basada en la consulta proporcionada por el usuario,
@@ -45,6 +49,7 @@ def recomendar_lugares(
     - query (str): Cadena de texto que describe la intención del usuario, incluyendo
       el tipo de lugar, actividad, compañía y ubicación. Esta consulta se utiliza directamente
       como 'textQuery' en la solicitud a la API de Google Places Text Search.
+    - session_id (str): Cadena de texto para usar como clave en la base de datos de redis.
 
     Retorna:
     - Una lista de nombres de lugares encontrados que coinciden con la consulta del usuario.
@@ -52,6 +57,8 @@ def recomendar_lugares(
     """
 
     print(f"""Query: {query}""")
+    print(f"""Session_id: {session_id}""")
+
     # Definir el cuerpo de la solicitud
     cuerpo = {
         "textQuery": query,
@@ -82,7 +89,7 @@ def recomendar_lugares(
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
 
-    redis.set('places', json.dumps(datos["places"]))
+    redis.set(session_id, json.dumps(datos["places"]))
 
     return nombres_lugares
 
