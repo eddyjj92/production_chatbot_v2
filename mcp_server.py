@@ -16,7 +16,7 @@ REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
 # Conexión a Redis
-redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True, password=REDIS_PASSWORD)
+redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
 if DEVELOPMENT == 'True':
     # Configuración de proxy si es necesario
