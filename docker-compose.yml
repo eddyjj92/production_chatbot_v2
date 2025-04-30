@@ -9,6 +9,7 @@ services:
       - mcp-network
     environment:
       - PORT=8000
+      - REDIS_HOST=redis
     env_file:
       - .env
     restart: always
