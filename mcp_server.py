@@ -64,7 +64,8 @@ def recomendar_lugares(
     # Definir el cuerpo de la solicitud
     cuerpo = {
         "textQuery": query,
-        "pageSize": 20
+        "pageSize": 20,
+        "includedTypes": ["restaurant, bar, night_club"],
     }
 
     # Encabezados de la solicitud
