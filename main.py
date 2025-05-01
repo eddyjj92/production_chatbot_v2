@@ -118,6 +118,7 @@ async def chat(req: MessageRequest, request: Request):
 
         # Añadir respuesta del agente al historial
         ai_msg = response["messages"][-1]
+        tool_msg = response["messages"][-2]
         session_histories[session_id].append(ai_msg)
 
         result = None
@@ -131,9 +132,9 @@ async def chat(req: MessageRequest, request: Request):
         print(f"""Result: {result}""")
 
         return {
-            "response": ai_msg.content,
+            "response": ai_msg,
             "result": result,
-            "tool": response["messages"][-2]
+            "tool": tool_msg if tool_msg.type == "tool" else None
         }
 
 
