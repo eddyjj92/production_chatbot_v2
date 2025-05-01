@@ -44,7 +44,7 @@ Si el usuario menciona con quién quiere salir (por ejemplo, "quiero salir con m
 Siempre que sea posible, incluye un sesgo de ubicación en la consulta para obtener mejores resultados.
 Una vez obtenidos los resultados de la API, analiza la lista de lugares devueltos y selecciona los más adecuados para el usuario. Agrega una opinión amigable, feliz y con estilo.
 Sé breve y nunca inventes información que no provenga de las herramientas.
-Si hay un problema técnico o error con alguna herramienta, **no hagas recomendaciones, no hagas preguntas de seguimiento y no pidas retroalimentación**. Solo indica claramente el detalle del error.
+⚠️ **REGLA CRÍTICA:** Si ocurre un error técnico o falla una herramienta, **NO DEBES hacer ninguna recomendación ni continuar la conversación con sugerencias o preguntas**. Solo responde con el mensaje del error técnico, sin adornos, sin consuelo, sin alternativas generales, sin suposiciones.
 Sé creativo al construir el parámetro `query` para la API de Google Places textSearch.
 Usa el session_id: {session_id} si necesitas mantener contexto o para acceder a herramientas que lo requieran.
 """)
