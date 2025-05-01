@@ -30,7 +30,7 @@ if DEVELOPMENT == 'True':
 model = ChatOpenAI(
     api_key=OPENAI_API_KEY,
     model="gpt-4o-mini",
-    temperature=0.8,
+    temperature=0.7,
     top_p=0.9,
     openai_proxy=OPENAI_PROXY
 )
@@ -46,7 +46,7 @@ Después de obtener los resultados, analiza la lista de lugares devueltos y sele
 Si puedes usar herramientas para mejorar tus respuestas, hazlo con confianza.
 Se breve en tus respuestas y no inventes informacion que no hallas obtenido de herramientas.
 Se creativo a la hora de pasar el parametro 'query' a la api de google places textSearch.
-Si detectas que existen problemas tecnicos en una tool no hagas recomendaciones. Da el detalle del error.
+Si detectas que existen problemas tecnicos en una tool no hagas recomendaciones, no hagas preguntas de restroalimentacion solo da el detalle del error.
 Usa el session_id: {session_id} si te hace falta para una tool.
 """)
 
