@@ -65,7 +65,7 @@ def recomendar_lugares(
     cuerpo = {
         "textQuery": query,
         "pageSize": 20,
-        "includedTypes": ["restaurant, bar, night_club"],
+        "includedTypes": ["restaurant", "bar", "night_club"],
     }
 
     # Encabezados de la solicitud
@@ -84,10 +84,11 @@ def recomendar_lugares(
 
     # Verificar si la solicitud fue exitosa
     if respuesta.status_code != 200:
+        print(f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}")
         return f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}"
 
     datos = respuesta.json()
-    print(datos)
+    print(f"""Datos: {datos}""")
 
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
