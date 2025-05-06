@@ -42,6 +42,11 @@ def recomendar_lugares(
                 "Cadena de texto para usar como clave en la base de datos de redis"
             )
         ),
+    place_type: str = Field(
+                description=(
+                    "Cadena de texto para clasificar lugar a buscar puede ser una de estas opciones: (restaurant, bar, night_club)"
+                )
+            ),
 ) -> Union[str, List[str], List[Any]]:
     """
     Realiza una búsqueda de lugares basada en la consulta proporcionada por el usuario,
@@ -52,6 +57,7 @@ def recomendar_lugares(
       el tipo de lugar, actividad, compañía y ubicación. Esta consulta se utiliza directamente
       como 'textQuery' en la solicitud a la API de Google Places Text Search.
     - session_id (str): Cadena de texto para usar como clave en la base de datos de redis.
+    - place_type (str): Cadena de texto para clasificar lugar a buscar puede ser una de estas opciones: (restaurant, bar, night_club)
 
     Retorna:
     - Una lista de nombres de lugares encontrados que coinciden con la consulta del usuario.
@@ -60,12 +66,14 @@ def recomendar_lugares(
 
     print(f"""Query: {query}""")
     print(f"""Session_id: {session_id}""")
+    print(f"""Place type: {place_type}""")
 
     # Definir el cuerpo de la solicitud
     cuerpo = {
         "textQuery": query,
         "pageSize": 20,
-        "includedTypes": ["restaurant", "bar", "night_club"],
+        "includedType": place_type,
+        "strictTypeFiltering": True
     }
 
     # Encabezados de la solicitud
