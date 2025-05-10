@@ -170,9 +170,16 @@ def recomendar_lugares_clapzy(
         "Accept": "application/json"
     }
 
+    url = "https://backend.clapzy.app/api/establishments/coordenates"
+
+    if token == session_id:
+        headers["X-Guest-Access-Token"] = token
+        del headers["Authorization"]
+        url = "https://backend.clapzy.app/api/guest/establishments/coordenates"
+
     # Realizar la solicitud POST
     respuesta = requests.get(
-        "https://backend.clapzy.app/api/establishments/coordenates",
+        url,
         params=cuerpo,
         headers=headers
     )
