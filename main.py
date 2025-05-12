@@ -129,8 +129,8 @@ async def chat(req: MessageRequest, request: Request):
 
         # Añadir respuesta del agente al historial
         ai_msg = response["messages"][-1]
-        tool_clazpy_msg = response["messages"][-2]
-        tool_google_places_msg = response["messages"][-3]
+        tool_google_places_msg = response["messages"][-2]
+        tool_clazpy_msg = response["messages"][-3]
         session_histories[session_id].append(ai_msg)
 
         result_google_places = None
