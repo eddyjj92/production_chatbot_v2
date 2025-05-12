@@ -133,21 +133,21 @@ async def chat(req: MessageRequest, request: Request):
         tool_google_places_msg = response["messages"][-3]
         session_histories[session_id].append(ai_msg)
 
-        result_clapzy = None
-        if response["messages"][-2].type == "tool" and response["messages"][-2].content:
-            raw_places = redis.get(f"""{session_id}_clapzy""")
-
-            if raw_places:
-                result_clapzy = json.loads(raw_places)
-                redis.delete(f"""{session_id}_clapzy""")
-
         result_google_places = None
-        if response["messages"][-3].type == "tool" and response["messages"][-3].content:
+        if response["messages"][-2].type == "tool" and response["messages"][-2].content:
             raw_places = redis.get(f"""{session_id}""")
 
             if raw_places:
                 result_google_places = json.loads(raw_places)
                 redis.delete(f"""{session_id}""")
+
+        result_clapzy = None
+        if response["messages"][-3].type == "tool" and response["messages"][-3].content:
+            raw_places = redis.get(f"""{session_id}_clapzy""")
+
+            if raw_places:
+                result_clapzy = json.loads(raw_places)
+                redis.delete(f"""{session_id}_clapzy""")
 
         return {
             "response": ai_msg,
