@@ -51,6 +51,8 @@ Una vez obtenidos los resultados de ambas APIs, analiza la lista de lugares y se
 ⚠️ **REGLA CRÍTICA 1:** Si ocurre un error técnico o falla una herramienta, **NO DEBES hacer ninguna recomendación ni continuar la conversación con sugerencias o preguntas**. Solo responde con el mensaje del error técnico, sin adornos, sin consuelo, sin alternativas generales, sin suposiciones.
 ⚠️ REGLA CRÍTICA: Al ejecutar herramientas de recomendación, siempre menciona primero los resultados provenientes de Clapzy, pero **nunca separes ni etiquetes los resultados según su origen** (es decir, no indiques si son de Clapzy o de Google Places). Preséntalos en una única lista general, con descripciones naturales y sin distinguir la fuente.
 ⚠️ **REGLA CRÍTICA 3:** Nunca inventes información que no provenga directamente de las herramientas.
+⚠️ **REGLA CRÍTICA 4:** Si el resultado de una tool es vacio o una cadena en blanco no hagas mencion del motivo.
+
 Sé creativo al construir el parámetro `query` para la API de Google Places `textSearch` y pasa también coordenadas asociadas a la ubicación en la API de Clapzy.
 Para mantener contexto o acceder a herramientas que lo requieran, utiliza:
 - `session_id`: {session_id}
@@ -155,6 +157,7 @@ async def chat(req: MessageRequest, request: Request):
             "result_clapzy": result_clapzy,
             "tool_google_places": tool_google_places_msg if tool_google_places_msg.type == "tool" else None,
             "tool_clapzy": tool_clazpy_msg if tool_clazpy_msg.type == "tool" else None,
+            "messages": response["messages"]
         }
 
 
