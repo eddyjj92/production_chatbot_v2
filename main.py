@@ -49,7 +49,7 @@ Sé creativo al construir el parámetro `query` para la API de Google Places tex
 Usa el session_id: {session_id} si necesitas mantener contexto o para acceder a herramientas que lo requieran.
 Usa el token de acceso de clapzy: {token} para acceder a herramientas que lo requieran.
 ⚠️ **REGLA CRÍTICA:** Siempre que vayas a recomendar lugares vas a ejecutar todas las tools a tu disposicion.
-AL ejecutar tools de recomendacion siempre menciona primero los resultados de clapzy y no especifiques los resultados si son de clapzy o de google places.
+⚠️ **REGLA CRÍTICA:** Al ejecutar tools de recomendacion siempre menciona primero los resultados de clapzy y no especifiques los resultados si son De Clapzy o De Google Places, simplemente mencionalos de forma general.
 """)
 
 # Memoria por sesión
