@@ -59,7 +59,6 @@ Para mantener contexto o acceder a herramientas que lo requieran, utiliza:
 - token de acceso de Clapzy: {token}
 """
 
-
 # Memoria por sesión
 session_histories = {}
 
@@ -136,20 +135,25 @@ async def chat(req: MessageRequest, request: Request):
         session_histories[session_id].append(ai_msg)
 
         result_google_places = None
-        if response["messages"][-2].type == "tool" and response["messages"][-2].content:
+        if response["messages"][-2].type == "tool" and response["messages"][
+            -2].name == "recomendar_lugares_google_places":
             raw_places = redis.get(f"""{session_id}""")
 
             if raw_places:
                 result_google_places = json.loads(raw_places)
                 redis.delete(f"""{session_id}""")
+        else:
+            tool_google_places_msg = response["messages"][-3]
 
         result_clapzy = None
-        if response["messages"][-3].type == "tool" and response["messages"][-3].content:
+        if response["messages"][-3].type == "tool" and response["messages"][-3].name == "recomendar_lugares_clapzy":
             raw_places = redis.get(f"""{session_id}_clapzy""")
 
             if raw_places:
                 result_clapzy = json.loads(raw_places)
                 redis.delete(f"""{session_id}_clapzy""")
+        else:
+            tool_clazpy_msg = response["messages"][-2]
 
         return {
             "response": ai_msg,
