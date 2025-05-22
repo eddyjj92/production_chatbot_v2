@@ -89,8 +89,7 @@ async def lifespan(app: FastAPI):
     }).__aenter__()
 
     tools = app.state.client.get_tools()
-    memory = MemorySaver()
-    app.state.agent = create_react_agent(model, tools=tools, checkpointer=memory)
+    app.state.agent = create_react_agent(model, tools=tools)
 
     yield
 
@@ -115,6 +114,8 @@ async def chat(req: MessageRequest, request: Request):
     user_input = req.message
     token = req.token
 
+    print(session_histories)
+
     # Inicializar historial si no existe
     if session_id not in session_histories:
         session_histories[session_id] = [SystemMessage(content=system_prompt(session_id, token))]
@@ -137,7 +138,8 @@ async def chat(req: MessageRequest, request: Request):
         session_histories[session_id].append(ai_msg)
 
         result_google_places = None
-        if response["messages"][-2].type == "tool" and response["messages"][-2].name == "recomendar_lugares_google_places":
+        if response["messages"][-2].type == "tool" and response["messages"][
+            -2].name == "recomendar_lugares_google_places":
             tool_google_places_msg = response["messages"][-2]
         else:
             tool_google_places_msg = response["messages"][-3]
@@ -170,6 +172,39 @@ async def chat(req: MessageRequest, request: Request):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+class ResetRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/reset_session")
+async def reset_session(request_data: ResetRequest, request: Request):
+    """
+    Resetea completamente el historial y estado del agente para una sesión específica.
+    """
+    try:
+        session_id = request_data.session_id
+
+        # Limpiar historial en memoria local
+        if session_id in session_histories:
+            del session_histories[session_id]
+
+        await request.app.state.agent.checkpointer.delete_thread(session_id)
+
+        print(session_histories)
+
+        return {
+            "status": "success",
+            "message": f"Memoria completa de sesión {session_id} reseteada correctamente"
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error al resetear sesión {session_id}",
+            "error": str(e)
+        }
 
 
 if __name__ == "__main__":
