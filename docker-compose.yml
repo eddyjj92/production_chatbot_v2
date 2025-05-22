@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   mcp-server:
+    expose:
+      - "8000"
     build:
       context: .
       dockerfile: mcp.Dockerfile
