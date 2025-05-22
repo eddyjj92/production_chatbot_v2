@@ -1,14 +1,16 @@
+version: '3.8'
+
 services:
   mcp-server:
     build:
       context: .
       dockerfile: mcp.Dockerfile
     ports:
-      - "9001:8000"  # Mapea 9001 (host) → 8000 (contenedor)
+      - "9001:8000"
     networks:
       - mcp-network
     environment:
-      - PORT=8000  # El puerto interno del MCP sigue siendo 8000
+      - PORT=8000
       - REDIS_HOST=redis
     env_file:
       - .env
@@ -19,13 +21,14 @@ services:
       context: .
       dockerfile: main.Dockerfile
     ports:
-      - "9000:8001"  # Mapea 9000 (host) → 8001 (contenedor)
+      - "9000:8001"
     networks:
       - mcp-network
     depends_on:
       - mcp-server
       - redis
     environment:
+      - MCP_SERVER_URL=http://mcp-server:8000
       - REDIS_HOST=redis
     env_file:
       - .env
@@ -36,3 +39,7 @@ services:
     networks:
       - mcp-network
     restart: always
+
+networks:
+  mcp-network:
+    driver: bridge
