@@ -83,8 +83,8 @@ async def lifespan(app: FastAPI):
     # ⚠️ NO usar como context manager
     client = MultiServerMCPClient({
         "mcp": {
-            "url": f"{MCP_SERVER_URL}/sse",
-            "transport": "sse"
+            "url": f"{MCP_SERVER_URL}/mcp",
+            "transport": "streamable_http"
         }
     })
 
