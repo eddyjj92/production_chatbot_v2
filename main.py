@@ -79,21 +79,20 @@ class MessageRequest(BaseModel):
 async def lifespan(app: FastAPI):
     MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
 
-    # Inicializar herramientas y agente
-    app.state.client = await MultiServerMCPClient({
+    # ⚠️ NO usar como context manager
+    client = MultiServerMCPClient({
         "mcp": {
-            # make sure you start your weather server on port 8000
             "url": f"{MCP_SERVER_URL}/sse",
             "transport": "sse"
         }
-    }).__aenter__()
+    })
 
-    tools = app.state.client.get_tools()
+    tools = client.get_tools()
+
+    app.state.client = client
     app.state.agent = create_react_agent(model, tools=tools)
 
-    yield
-
-    await app.state.client.__aexit__(None, None, None)
+    yield  # No necesitas __aexit__
 
 
 # Crear la aplicación FastAPI
