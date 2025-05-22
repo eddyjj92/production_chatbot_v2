@@ -28,7 +28,6 @@ services:
       - mcp-server
       - redis
     environment:
-      - MCP_SERVER_URL=http://mcp-server:8000
       - REDIS_HOST=redis
     env_file:
       - .env
