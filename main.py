@@ -79,12 +79,12 @@ class MessageRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
-
+    print(MCP_SERVER_URL)
     # ⚠️ NO usar como context manager
     client = MultiServerMCPClient({
         "mcp": {
+            "transport": "streamable_http",
             "url": f"{MCP_SERVER_URL}/mcp",
-            "transport": "streamable_http"
         }
     })
 
