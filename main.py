@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from langchain_mcp_adapters.tools import load_mcp_tools
+from mcp import StdioServerParameters, ClientSession
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -11,6 +13,8 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from contextlib import asynccontextmanager
 from redis import Redis
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 # Cargar variables de entorno
 load_dotenv()
@@ -79,20 +83,25 @@ class MessageRequest(BaseModel):
 async def lifespan(app: FastAPI):
     MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
 
-    # ⚠️ NO usar como context manager
-    client = MultiServerMCPClient({
-        "mcp": {
-            "url": f"{MCP_SERVER_URL}/sse",
-            "transport": "sse"
-        }
-    })
+    server_params = StdioServerParameters(
+        command="python",
+        # Make sure to update to the full absolute path to your math_server.py file
+        args=["mcp_server.py"],
+    )
 
-    tools = await client.get_tools()
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            # Initialize the connection
+            await session.initialize()
 
-    app.state.client = client
-    app.state.agent = create_react_agent(model, tools=tools)
+            # Get tools
+            tools = await load_mcp_tools(session)
 
-    yield  # No necesitas __aexit__
+            # Create and run the agent
+            app.state.agent = create_react_agent(model, tools=tools)
+
+            yield
+
 
 
 # Crear la aplicación FastAPI
