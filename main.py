@@ -179,18 +179,16 @@ class ResetRequest(BaseModel):
 
 
 @app.post("/reset_session")
-async def reset_session(request_data: ResetRequest, request: Request):
+async def reset_session(request_data: ResetRequest):
     """
     Resetea completamente el historial y estado del agente para una sesión específica.
     """
-    try:
-        session_id = request_data.session_id
 
+    session_id = request_data.session_id
+    try:
         # Limpiar historial en memoria local
         if session_id in session_histories:
             del session_histories[session_id]
-
-        await request.app.state.agent.checkpointer.delete_thread(session_id)
 
         print(session_histories)
 
