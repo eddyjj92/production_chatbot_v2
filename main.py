@@ -11,6 +11,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from contextlib import asynccontextmanager
 from redis import Redis
+from langchain_mcp_adapters.client import load_mcp_tools
 
 # Cargar variables de entorno
 load_dotenv()
@@ -87,12 +88,13 @@ async def lifespan(app: FastAPI):
         }
     })
 
-    tools = client.get_tools()
+    async with client.session("mcp") as session:
+        tools = await load_mcp_tools(session)  # ✅ ESTA ES LA FORMA CORRECTA
 
-    app.state.client = client
-    app.state.agent = create_react_agent(model, tools=tools)
+        app.state.client = client
+        app.state.agent = create_react_agent(model, tools=tools)
 
-    yield  # No necesitas __aexit__
+        yield
 
 
 # Crear la aplicación FastAPI
