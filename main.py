@@ -66,6 +66,7 @@ Sé creativo al construir el parámetro `query` para la API de Google Places `te
 Para mantener contexto o acceder a herramientas que lo requieran, utiliza:
 - `session_id`: {session_id}
 - token de acceso de Clapzy: {token}
+Responde en el mismo idioma de la pregunta del usuario.
 """
 
 # Memoria por sesión
