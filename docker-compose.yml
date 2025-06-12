@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: main.Dockerfile
     ports:
-      - "9000:8001"
+      - "9001:8001"
     networks:
       - mcp-network
     depends_on:
