@@ -19,6 +19,7 @@ from mcp.client.stdio import stdio_client
 # Cargar variables de entorno
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_MODEL = os.getenv("OPENAI_API_MODEL")
 DEVELOPMENT = os.getenv("DEVELOPMENT")
 OPENAI_PROXY = None
 REDIS_HOST = os.getenv("REDIS_HOST")
@@ -33,7 +34,7 @@ if DEVELOPMENT == 'True':
 # Configurar el modelo
 model = ChatOpenAI(
     api_key=OPENAI_API_KEY,
-    model="gpt-4o-mini",
+    model=OPENAI_API_MODEL,
     temperature=0.4,
     top_p=0.85,
     openai_proxy=OPENAI_PROXY
