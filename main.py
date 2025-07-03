@@ -16,6 +16,8 @@ from redis import Redis
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from helpers import get_greeting_message
+
 # Cargar variables de entorno
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -125,7 +127,26 @@ async def chat(req: MessageRequest, request: Request):
 
     # Inicializar historial si no existe
     if session_id not in session_histories:
-        session_histories[session_id] = [SystemMessage(content=system_prompt(session_id, token))]
+        # Usamos siempre el mismo system prompt
+        system_content = system_prompt(session_id, token)
+
+        # Inicializar historial con mensaje del sistema
+        session_histories[session_id] = [SystemMessage(content=system_content)]
+
+        # Añadir saludo inicial aleatorio
+        greeting_text = get_greeting_message()
+        greeting_message = AIMessage(content=greeting_text)
+        session_histories[session_id].append(greeting_message)
+
+        # Devolver directamente el saludo sin llamar al modelo
+        return {
+            "response": greeting_message,
+            "result_google_places": None,
+            "result_clapzy": None,
+            "tool_google_places": None,
+            "tool_clapzy": None,
+            "messages": session_histories[session_id]
+        }
 
     # Añadir el mensaje del usuario
     history = session_histories[session_id]
