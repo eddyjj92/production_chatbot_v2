@@ -16,6 +16,8 @@ from redis import Redis
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from helpers import get_greeting_message
+
 # Cargar variables de entorno
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -129,7 +131,22 @@ async def chat(req: MessageRequest, request: Request):
 
     # Inicializar historial si no existe
     if session_id not in session_histories:
-        session_histories[session_id] = [SystemMessage(content=system_prompt(session_id, token))]
+        system_prompt_content = system_prompt(session_id, token)
+        session_histories[session_id] = [SystemMessage(content=system_prompt_content)]
+
+        # Añadir saludo inicial aleatorio
+        greeting_message = AIMessage(content=get_greeting_message())
+        session_histories[session_id].append(greeting_message)
+
+        # Devolver directamente el saludo sin llamar al modelo
+        return {
+            "response": greeting_message,
+            "result_google_places": None,
+            "result_clapzy": None,
+            "tool_google_places": None,
+            "tool_clapzy": None,
+            "messages": session_histories[session_id]
+        }
 
     # Añadir el mensaje del usuario
     history = session_histories[session_id]
@@ -149,37 +166,33 @@ async def chat(req: MessageRequest, request: Request):
         session_histories[session_id].append(ai_msg)
 
         result_google_places = None
-        if response["messages"][-2].type == "tool" and response["messages"][
-            -2].name == "recomendar_lugares_google_places":
+        tool_google_places_msg = None
+        if len(response["messages"]) >= 2 and response["messages"][-2].type == "tool":
             tool_google_places_msg = response["messages"][-2]
-        else:
-            tool_google_places_msg = response["messages"][-3]
-
-        raw_places = redis.get(f"""{session_id}""")
-        if raw_places:
-            result_google_places = json.loads(raw_places)
-            redis.delete(f"""{session_id}""")
+            if tool_google_places_msg.name == "recomendar_lugares_google_places":
+                raw_places = redis.get(f"{session_id}")
+                if raw_places:
+                    result_google_places = json.loads(raw_places)
+                    redis.delete(f"{session_id}")
 
         result_clapzy = None
-        if response["messages"][-3].type == "tool" and response["messages"][-3].name == "recomendar_lugares_clapzy":
+        tool_clazpy_msg = None
+        if len(response["messages"]) >= 3 and response["messages"][-3].type == "tool":
             tool_clazpy_msg = response["messages"][-3]
-        else:
-            tool_clazpy_msg = response["messages"][-2]
-
-        raw_places = redis.get(f"""{session_id}_clapzy""")
-        if raw_places:
-            result_clapzy = json.loads(raw_places)
-            redis.delete(f"""{session_id}_clapzy""")
+            if tool_clazpy_msg.name == "recomendar_lugares_clapzy":
+                raw_places = redis.get(f"{session_id}_clapzy")
+                if raw_places:
+                    result_clapzy = json.loads(raw_places)
+                    redis.delete(f"{session_id}_clapzy")
 
         return {
             "response": ai_msg,
             "result_google_places": result_google_places,
             "result_clapzy": result_clapzy,
-            "tool_google_places": tool_google_places_msg if tool_google_places_msg.type == "tool" else None,
-            "tool_clapzy": tool_clazpy_msg if tool_clazpy_msg.type == "tool" else None,
+            "tool_google_places": tool_google_places_msg if tool_google_places_msg and tool_google_places_msg.type == "tool" else None,
+            "tool_clapzy": tool_clazpy_msg if tool_clazpy_msg and tool_clazpy_msg.type == "tool" else None,
             "messages": response["messages"]
         }
-
 
     except Exception as e:
         return {"error": str(e)}
@@ -200,8 +213,6 @@ async def reset_session(request_data: ResetRequest):
         # Limpiar historial en memoria local
         if session_id in session_histories:
             del session_histories[session_id]
-
-        print(session_histories)
 
         return {
             "status": "success",
