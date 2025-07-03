@@ -35,7 +35,7 @@ if DEVELOPMENT == 'True':
 model = ChatOpenAI(
     api_key=OPENAI_API_KEY,
     model=OPENAI_API_MODEL,
-    temperature=0.4,
+    temperature=0.6,
     top_p=0.85,
     openai_proxy=OPENAI_PROXY
 )
