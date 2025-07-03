@@ -3,15 +3,15 @@ import random
 
 def get_greeting_message():
     greetings = [
-        "¡Hola! Bienvenido/a. ¿En qué puedo ayudarte hoy?",
-        "¡Buen día! Estoy aquí para asistirte, ¿cómo puedo servirte?",
-        "¡Bienvenido/a! Me alegra tenerte por aquí. ¿Qué necesitas?",
-        "¿Listo/a para empezar? ¡Estoy aquí para ayudarte!",
-        "¡Hola de nuevo! ¿En qué puedo colaborarte hoy?",
-        "¡Muy buenas! Soy tu asistente virtual. ¿Qué puedo hacer por ti?",
-        "¡Encantado/a de verte! Cuéntame, ¿en qué puedo ayudarte?",
-        "¡Saludos! ¿Qué planes tienes para hoy? Yo estoy listo/a para ayudarte.",
-        "¡Bienvenido/a! Si necesitas algo, solo dime.",
-        "¡Hola! Estoy aquí para lo que necesites. ¿Por dónde empezamos?"
+        "¡Hola hola! ¿Listo/a para descubrir planes chulos hoy?",
+        "¿Qué tal? Soy GAIA, tu buscadora de vibes. ¿Buscás plan o ya tenés uno en mente?",
+        "¡Bienvenido/a! Hoy vamos a encontrar el plan perfecto para vos.",
+        "Hey hey 🖐️ Soy GAIA y estoy lista para recomendarte lo mejor de lo mejor. ¿Por dónde empezamos?",
+        "¡Holi! ¿En qué puedo ayudarte a descubrir hoy? 🕵️‍♀️",
+        "¡Saludos! Soy GAIA, tu asistente de planes increíbles. ¿Qué andás buscando?",
+        "¡Buen día, viajero/a de bares y aventuras! ¿Te ayudo a encontrar algo genial?",
+        "¡Bienvenido/a! Si buscas buenos planes, llegaste al lugar correcto 😉",
+        "¿Y qué se te antoja hoy? Yo tengo buenas ideas. ¡Comencemos!",
+        "¡Hola! Estoy acá para ayudarte a encontrar lugares y planes que no te vas a querer perder."
     ]
     return random.choice(greetings)
