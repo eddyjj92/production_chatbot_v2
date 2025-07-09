@@ -3,15 +3,14 @@ import random
 
 def get_greeting_message():
     greetings = [
-        "¡Hola hola! ¿Listo/a para descubrir planes chulos hoy?",
-        "¿Qué tal? Soy GAIA, tu buscadora de vibes. ¿Buscás plan o ya tenés uno en mente?",
-        "¡Bienvenido/a! Hoy vamos a encontrar el plan perfecto para vos.",
-        "Hey hey 🖐️ Soy GAIA y estoy lista para recomendarte lo mejor de lo mejor. ¿Por dónde empezamos?",
-        "¡Holi! ¿En qué puedo ayudarte a descubrir hoy? 🕵️‍♀️",
-        "¡Saludos! Soy GAIA, tu asistente de planes increíbles. ¿Qué andás buscando?",
-        "¡Buen día, viajero/a de bares y aventuras! ¿Te ayudo a encontrar algo genial?",
-        "¡Bienvenido/a! Si buscas buenos planes, llegaste al lugar correcto 😉",
-        "¿Y qué se te antoja hoy? Yo tengo buenas ideas. ¡Comencemos!",
-        "¡Hola! Estoy acá para ayudarte a encontrar lugares y planes que no te vas a querer perder."
+        "**Hola soy Gaia.. ¿Qué mood traes hoy? Yo tengo el lugar perfecto para eso.** 😎",
+        "**Hola soy Gaia.. Hoy no decides sol@, yo te acompaño en la búsqueda sagrada del plan ideal.** ✨",
+        "**Hola soy Gaia.. Dime si estás para romance, caos, comida o todo lo anterior.** 🔥",
+        "**Hola soy Gaia.. Ok, estoy ready. ¿Plan chill, plan intenso o plan que ni tú sabías que querías?** 😏",
+        "**Hola soy Gaia.. No eres exigente… solo sabes lo que quieres. Dímelo y lo encuentro.** 💅",
+        "**Hola soy Gaia.. ¿Quién necesita suerte cuando tienes a GAIA?** 🍀🤖",
+        "**Hola soy Gaia.. Hoy salimos bien. Dame una pista y yo te doy el plan perfecto.** 🎯",
+        "**Mood bajón, mood fiesta, mood sin rumbo… aquí todo tiene destino.** 💃",
+        "**No prometo amor eterno, pero sí planes inolvidables.** ❤️‍🔥",
     ]
     return random.choice(greetings)
