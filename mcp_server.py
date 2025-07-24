@@ -76,7 +76,7 @@ def recomendar_lugares_google_places(
         "pageSize": 20,
         "includedType": place_type,
         "strictTypeFiltering": True,
-        "rankPreference": "POPULARITY",  # Priorizar lugares populares
+        "rankPreference": "RELEVANCE",  # Priorizar lugares más relevantes (ÚNICO VALOR VÁLIDO)
         "priceLevels": ["PRICE_LEVEL_INEXPENSIVE", "PRICE_LEVEL_MODERATE", "PRICE_LEVEL_EXPENSIVE"],  # Incluir diferentes rangos de precio
         "minRating": 3.5  # Solo lugares con rating mínimo de 3.5
     }
