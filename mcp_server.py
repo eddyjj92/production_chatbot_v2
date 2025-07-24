@@ -30,23 +30,25 @@ mcp = FastMCP("mcp")
 def recomendar_lugares_google_places(
     query: str = Field(
         description=(
-            "Cadena de texto que describe la intención del usuario, incluyendo "
-            "el tipo de lugar, actividad, compañía y ubicación. "
-            "Por ejemplo: 'Quiero cenar sushi con mi pareja en Barcelona'. "
-            "Esta consulta se utiliza directamente como 'textQuery' en la solicitud "
-            "a la API de Google Places Text Search."
+            "Query optimizado para Google Places que incluye el tipo de lugar, ubicación y contexto específico. "
+            "DEBE ser específico y natural. Ejemplos correctos: "
+            "'restaurantes románticos para cenar en Barcelona', "
+            "'bares de cócteles modernos en Madrid centro', "
+            "'clubs nocturnos música electrónica en Medellín'. "
+            "EVITAR queries genéricos como 'lugares en Barcelona'."
         )
     ),
     session_id: str = Field(
-            description=(
-                "Cadena de texto para usar como clave en la base de datos de redis"
-            )
-        ),
+        description="ID de sesión para almacenar resultados en Redis"
+    ),
     place_type: str = Field(
-                description=(
-                    "Cadena de texto para clasificar lugar a buscar puede ser una de estas opciones: (restaurant, bar, night_club)"
-                )
-            ),
+        description=(
+            "Tipo específico de lugar para filtrar resultados. Opciones válidas: "
+            "'restaurant' (para restaurantes, cafeterías, comida), "
+            "'bar' (para bares, pubs, cócteles), "
+            "'night_club' (para discotecas, clubs nocturnos, vida nocturna)"
+        )
+    ),
 ) -> Union[str, List[str], List[Any]]:
     """
     Realiza una búsqueda de lugares basada en la consulta proporcionada por el usuario,
@@ -68,19 +70,39 @@ def recomendar_lugares_google_places(
     # print(f"""Session_id: {session_id}""")
     # print(f"""Place type: {place_type}""")
 
-    # Definir el cuerpo de la solicitud
+    # Definir el cuerpo de la solicitud optimizado
     cuerpo = {
         "textQuery": query,
         "pageSize": 20,
         "includedType": place_type,
-        "strictTypeFiltering": True
+        "strictTypeFiltering": True,
+        "rankPreference": "POPULARITY",  # Priorizar lugares populares
+        "priceLevels": ["PRICE_LEVEL_INEXPENSIVE", "PRICE_LEVEL_MODERATE", "PRICE_LEVEL_EXPENSIVE"],  # Incluir diferentes rangos de precio
+        "minRating": 3.5  # Solo lugares con rating mínimo de 3.5
     }
 
-    # Encabezados de la solicitud
+    # Encabezados de la solicitud con campos optimizados
     encabezados = {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,  # Reemplaza con tu clave de API
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.id,places.photos,places.regularOpeningHours.weekdayDescriptions,places.editorialSummary,places.internationalPhoneNumber',
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,  
+        'X-Goog-FieldMask': (
+            'places.displayName,'
+            'places.formattedAddress,'
+            'places.location,'
+            'places.types,'
+            'places.rating,'
+            'places.userRatingCount,'
+            'places.priceLevel,'
+            'places.id,'
+            'places.photos,'
+            'places.regularOpeningHours.weekdayDescriptions,'
+            'places.editorialSummary,'
+            'places.internationalPhoneNumber,'
+            'places.websiteUri,'
+            'places.primaryType,'
+            'places.shortFormattedAddress,'
+            'places.businessStatus'
+        ),
     }
 
     # Realizar la solicitud POST
