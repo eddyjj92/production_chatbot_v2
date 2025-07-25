@@ -232,31 +232,50 @@ async def chat(req: MessageRequest, request: Request):
         ai_msg = response["messages"][-1]
         session_histories[session_id].append(ai_msg)
 
+        # Inicializar variables
         result_google_places = None
-        query_google_places = None
-        if response["messages"][-2].type == "tool" and response["messages"][
-            -2].name == "recomendar_lugares_google_places":
-            tool_google_places_msg = response["messages"][-2]
-        else:
-            tool_google_places_msg = response["messages"][-3]
-
-        raw_places = redis.get(f"""{session_id}""")
-        raw_query = redis.get(f"""{session_id}_query""")
-        if raw_places:
-            result_google_places = json.loads(raw_places)
-            redis.delete(f"""{session_id}""")
-
-
         result_clapzy = None
-        if response["messages"][-3].type == "tool" and response["messages"][-3].name == "recomendar_lugares_clapzy":
-            tool_clazpy_msg = response["messages"][-3]
-        else:
-            tool_clazpy_msg = response["messages"][-2]
+        tool_google_places_executed = False
+        tool_clapzy_executed = False
+        raw_query = None
 
-        raw_places_clapzy = redis.get(f"""{session_id}_clapzy""")
-        if raw_places_clapzy:
-            result_clapzy = json.loads(raw_places_clapzy)
-            redis.delete(f"""{session_id}_clapzy""")
+        # Encontrar el índice del último mensaje humano para identificar mensajes nuevos
+        all_messages = response["messages"]
+        last_human_index = -1
+        
+        for i in range(len(all_messages) - 1, -1, -1):
+            if hasattr(all_messages[i], 'type') and all_messages[i].type == "human":
+                last_human_index = i
+                break
+        
+        # Los mensajes NUEVOS son los que vienen después del último mensaje humano
+        if last_human_index != -1:
+            new_messages = all_messages[last_human_index + 1:]
+            
+            # Buscar herramientas ejecutadas en los mensajes NUEVOS solamente
+            for message in new_messages:
+                if hasattr(message, 'type') and message.type == "tool" and hasattr(message, 'name'):
+                    if message.name == "recomendar_lugares_google_places":
+                        tool_google_places_executed = True
+                    elif message.name == "recomendar_lugares_clapzy":
+                        tool_clapzy_executed = True
+
+        # Obtener resultados de Google Places si se ejecutó en esta respuesta
+        if tool_google_places_executed:
+            raw_places = redis.get(f"""{session_id}""")
+            raw_query = redis.get(f"""{session_id}_query""")
+            if raw_places:
+                result_google_places = json.loads(raw_places)
+                redis.delete(f"""{session_id}""")
+            if raw_query:
+                redis.delete(f"""{session_id}_query""")
+
+        # Obtener resultados de Clapzy si se ejecutó en esta respuesta
+        if tool_clapzy_executed:
+            raw_places_clapzy = redis.get(f"""{session_id}_clapzy""")
+            if raw_places_clapzy:
+                result_clapzy = json.loads(raw_places_clapzy)
+                redis.delete(f"""{session_id}_clapzy""")
 
 
 
@@ -264,8 +283,8 @@ async def chat(req: MessageRequest, request: Request):
             "response": ai_msg,
             "result_google_places": result_google_places,
             "result_clapzy": result_clapzy,
-            "tool_google_places": tool_google_places_msg if tool_google_places_msg.type == "tool" else None,
-            "tool_clapzy": tool_clazpy_msg if tool_clazpy_msg.type == "tool" else None,
+            "tool_google_places_executed": tool_google_places_executed,  # True/False si se ejecutó en esta respuesta
+            "tool_clapzy_executed": tool_clapzy_executed,                # True/False si se ejecutó en esta respuesta
             "messages": response["messages"],
             "query": raw_query
         }
