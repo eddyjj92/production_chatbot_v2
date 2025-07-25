@@ -219,6 +219,7 @@ async def chat(req: MessageRequest, request: Request):
         session_histories[session_id].append(ai_msg)
 
         result_google_places = None
+        query_google_places = None
         if response["messages"][-2].type == "tool" and response["messages"][
             -2].name == "recomendar_lugares_google_places":
             tool_google_places_msg = response["messages"][-2]
@@ -229,6 +230,9 @@ async def chat(req: MessageRequest, request: Request):
         if raw_places:
             result_google_places = json.loads(raw_places)
             redis.delete(f"""{session_id}""")
+            query_google_places = json.loads(f"""{session_id}_query""")
+            redis.delete(f"""{session_id}_query""")
+
 
         result_clapzy = None
         if response["messages"][-3].type == "tool" and response["messages"][-3].name == "recomendar_lugares_clapzy":
@@ -236,10 +240,12 @@ async def chat(req: MessageRequest, request: Request):
         else:
             tool_clazpy_msg = response["messages"][-2]
 
-        raw_places = redis.get(f"""{session_id}_clapzy""")
-        if raw_places:
-            result_clapzy = json.loads(raw_places)
+        raw_places_clapzy = redis.get(f"""{session_id}_clapzy""")
+        if raw_places_clapzy:
+            result_clapzy = json.loads(raw_places_clapzy)
             redis.delete(f"""{session_id}_clapzy""")
+
+
 
         return {
             "response": ai_msg,
@@ -247,7 +253,8 @@ async def chat(req: MessageRequest, request: Request):
             "result_clapzy": result_clapzy,
             "tool_google_places": tool_google_places_msg if tool_google_places_msg.type == "tool" else None,
             "tool_clapzy": tool_clazpy_msg if tool_clazpy_msg.type == "tool" else None,
-            "messages": response["messages"]
+            "messages": response["messages"],
+            "query": query_google_places
         }
 
 

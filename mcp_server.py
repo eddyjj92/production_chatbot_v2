@@ -124,6 +124,7 @@ def recomendar_lugares_google_places(
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
 
     redis.set(session_id, json.dumps(datos["places"]))
+    redis.set(f"""{session_id}_query""", query)
 
     return nombres_lugares
 
