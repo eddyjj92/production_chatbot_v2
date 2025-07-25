@@ -15,9 +15,21 @@ El prompt anterior no tenía restricciones específicas sobre mencionar herramie
 
 ## ✅ Solución Implementada
 
-### 1. **Nueva Sección: RESTRICCIONES IMPORTANTES**
+### 1. **Nueva Funcionalidad: Búsquedas de Establecimientos Específicos**
 
-Se agregó la regla #6 con prohibiciones específicas:
+Se agregó la regla #4 para manejar búsquedas de lugares específicos:
+
+```
+4. **Búsquedas de establecimientos específicos**:
+   - Si el usuario menciona un nombre específico de lugar, busca ESE lugar exacto
+   - Ejemplos: "Casa Botín Madrid", "El Celler de Can Roca", "Paradiso Barcelona"
+   - Query específico: usa el nombre exacto + ciudad si está disponible
+   - Si no especifica ciudad, pregunta SOLO por la ubicación
+```
+
+### 2. **Nueva Sección: RESTRICCIONES IMPORTANTES**
+
+Se agregó la regla #7 con prohibiciones específicas:
 
 ```
 6. **RESTRICCIONES IMPORTANTES - NUNCA hagas esto**:
@@ -30,9 +42,9 @@ Se agregó la regla #6 con prohibiciones específicas:
    - NO menciones plataformas de terceros para obtener más información
 ```
 
-### 2. **Nueva Regla: SOLO Herramientas Internas**
+### 3. **Nueva Regla: SOLO Herramientas Internas**
 
-Se agregó la regla #7 para reforzar el uso exclusivo de herramientas propias:
+Se agregó la regla #8 para reforzar el uso exclusivo de herramientas propias:
 
 ```
 7. **SOLO usa tus herramientas internas**:
@@ -41,7 +53,7 @@ Se agregó la regla #7 para reforzar el uso exclusivo de herramientas propias:
    - Mantén al usuario dentro del ecosistema Clapzy
 ```
 
-### 3. **Sección PROHIBIDO ABSOLUTO**
+### 4. **Sección PROHIBIDO ABSOLUTO**
 
 Se agregó una sección específica con ejemplos concretos de lo que NO debe decir:
 
@@ -61,6 +73,8 @@ Se agregó una sección específica con ejemplos concretos de lo que NO debe dec
 3. **Fortalecimiento de marca**: GAIA se posiciona como la única herramienta necesaria
 4. **Mejor UX**: El usuario no necesita salir de la app para obtener información
 5. **Control de calidad**: Todas las recomendaciones pasan por los filtros de Clapzy
+6. **Búsquedas específicas**: Capacidad de encontrar establecimientos específicos por nombre
+7. **Flexibilidad**: Maneja tanto búsquedas generales como específicas de manera inteligente
 
 ## 🔧 Implementación Técnica
 
@@ -68,10 +82,13 @@ Se agregó una sección específica con ejemplos concretos de lo que NO debe dec
 - `main.py` - Función `system_prompt()`
 
 ### Cambios realizados:
-- ✅ Agregada regla #6: RESTRICCIONES IMPORTANTES
-- ✅ Agregada regla #7: SOLO herramientas internas  
+- ✅ Agregada regla #4: Búsquedas de establecimientos específicos
+- ✅ Agregada regla #7: RESTRICCIONES IMPORTANTES
+- ✅ Agregada regla #8: SOLO herramientas internas  
 - ✅ Agregada sección: PROHIBIDO ABSOLUTO
-- ✅ Renumeradas reglas existentes (8 y 9)
+- ✅ Renumeradas reglas existentes (9 y 10)
+- ✅ Agregados tonos específicos para búsquedas de lugares específicos
+- ✅ Mejoradas respuestas cuando no se encuentran resultados
 
 ## 🧪 Casos de Prueba Sugeridos
 
@@ -82,6 +99,20 @@ Se agregó una sección específica con ejemplos concretos de lo que NO debe dec
 ### ✅ Comportamiento esperado (nuevo):
 **Usuario**: "No encuentro información sobre este restaurante"
 **GAIA mejorado**: "Déjame buscar más opciones similares en la zona que te puedan interesar"
+
+### 🎯 Casos de Uso para Búsquedas Específicas
+
+#### Caso 1: Usuario busca lugar específico con ciudad
+**Usuario**: "Quiero ir a Casa Botín en Madrid"
+**GAIA**: "¡Ah, ese lugar! Déjame buscarte toda la info de Casa Botín Madrid"
+
+#### Caso 2: Usuario busca lugar específico sin ciudad
+**Usuario**: "Quiero ir a Paradiso"
+**GAIA**: "¡Ese nombre suena genial! ¿En qué ciudad quieres ir a Paradiso?"
+
+#### Caso 3: No encuentra el lugar específico
+**Usuario**: "Busco el restaurante XYZ"
+**GAIA**: "Ese nombre no me suena, pero tengo lugares igual de chulos en esa zona"
 
 ## 🚀 Próximos Pasos
 
