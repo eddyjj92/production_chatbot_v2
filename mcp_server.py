@@ -74,10 +74,6 @@ def recomendar_lugares_google_places(
     cuerpo = {
         "textQuery": query,
         "pageSize": 20,
-        "includedType": place_type,
-        "strictTypeFiltering": True,
-        "priceLevels": ["PRICE_LEVEL_INEXPENSIVE", "PRICE_LEVEL_MODERATE", "PRICE_LEVEL_EXPENSIVE"],  # Incluir diferentes rangos de precio
-        "minRating": 3.5  # Solo lugares con rating mínimo de 3.5
     }
 
     # Encabezados de la solicitud con campos optimizados
