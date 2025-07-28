@@ -70,11 +70,32 @@ def recomendar_lugares_google_places(
     # print(f"""Session_id: {session_id}""")
     # print(f"""Place type: {place_type}""")
 
+    # Mejorar el query para filtrar contenido no deseado
+    query_mejorado = query
+    
+    # Para night clubs, agregar términos específicos y mejorar el contexto
+    if place_type == "night_club":
+        # Agregar términos positivos para night clubs legítimos
+        terminos_positivos = ["discoteca", "club nocturno", "música", "baile", "DJ", "fiesta", "nightclub"]
+        
+        # Verificar si el query ya contiene términos específicos de night club
+        tiene_terminos_club = any(termino in query.lower() for termino in terminos_positivos)
+        
+        if not tiene_terminos_club:
+            query_mejorado = f"{query} discoteca música baile entretenimiento nocturno"
+        else:
+            query_mejorado = f"{query} entretenimiento nocturno"
+    
     # Definir el cuerpo de la solicitud optimizado
     cuerpo = {
-        "textQuery": query,
+        "textQuery": query_mejorado,
         "pageSize": 20,
     }
+    
+    # Para night clubs, agregar restricciones de ubicación si es posible
+    if place_type == "night_club":
+        # Agregar filtro de tipo de establecimiento válido
+        cuerpo["includedType"] = "night_club"
 
     # Encabezados de la solicitud con campos optimizados
     encabezados = {
@@ -115,10 +136,67 @@ def recomendar_lugares_google_places(
     datos = respuesta.json()
     # print(f"""Datos: {datos}""")
 
-    # Obtener los nombres de los lugares encontrados
-    nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
+    # Filtrar lugares inapropiados para night clubs
+    lugares_filtrados = datos["places"]
+    
+    if place_type == "night_club":
+        # Términos que indican contenido adulto o inapropiado
+        terminos_excluir = [
+            "adult", "strip", "gentlemen", "massage", "escort", "brothel", 
+            "burdel", "prostíbulo", "table dance", "cabaret", "exotic",
+            "sensual", "erotic", "xxx", "girls", "ladies", "spa",
+            "relax", "private", "vip girls", "hostess", "acompañantes"
+        ]
+        
+        # Tipos de Google Places que queremos excluir para night clubs
+        tipos_excluir = [
+            "spa", "beauty_salon", "hair_care", "health", "lodging",
+            "tourist_attraction", "establishment", "point_of_interest"
+        ]
+        
+        lugares_filtrados = []
+        for lugar in datos["places"]:
+            # Verificar nombre del lugar
+            nombre = lugar["displayName"]["text"].lower()
+            
+            # Verificar tipos del lugar
+            tipos_lugar = lugar.get("types", [])
+            tipos_lugar_lower = [tipo.lower() for tipo in tipos_lugar]
+            
+            # Verificar descripción editorial si existe
+            descripcion = ""
+            if "editorialSummary" in lugar and lugar["editorialSummary"]:
+                descripcion = lugar["editorialSummary"].get("text", "").lower()
+            
+            # Verificar dirección para contexto adicional
+            direccion = lugar.get("formattedAddress", "").lower()
+            
+            # Combinar todo el texto para análisis
+            texto_completo = f"{nombre} {descripcion} {direccion}"
+            
+            # Verificar si contiene términos a excluir
+            contiene_terminos_problematicos = any(termino in texto_completo for termino in terminos_excluir)
+            
+            # Verificar tipos problemáticos
+            tiene_tipos_problematicos = any(tipo in tipos_lugar_lower for tipo in tipos_excluir)
+            
+            # Solo incluir si no tiene contenido problemático
+            if not contiene_terminos_problematicos and not tiene_tipos_problematicos:
+                # Verificar que sea realmente un lugar de entretenimiento nocturno
+                tipos_validos_nightclub = [
+                    "night_club", "bar", "restaurant", "establishment", 
+                    "point_of_interest", "food", "meal_takeaway"
+                ]
+                
+                # Si tiene al menos un tipo válido para nightclub, incluirlo
+                if any(tipo in tipos_lugar_lower for tipo in tipos_validos_nightclub) or "club" in nombre or "discoteca" in nombre:
+                    lugares_filtrados.append(lugar)
 
-    redis.set(session_id, json.dumps(datos["places"]))
+    # Obtener los nombres de los lugares encontrados
+    nombres_lugares = [lugar["displayName"]["text"] for lugar in lugares_filtrados]
+
+    # Guardar los lugares filtrados en Redis
+    redis.set(session_id, json.dumps(lugares_filtrados))
     redis.set(f"""{session_id}_query""", query)
 
     return nombres_lugares
