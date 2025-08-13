@@ -1,4 +1,5 @@
 import json
+from email.policy import default
 from typing import Any, Union, List
 
 from mcp.server.fastmcp import FastMCP
@@ -122,6 +123,77 @@ def recomendar_lugares_google_places(
     redis.set(f"""{session_id}_query""", query)
 
     return nombres_lugares
+
+
+@mcp.tool()
+def verificar_ciudades_clapzy(
+    ciudad: str = Field(
+        description="Nombre de la ciudad a verificar"
+    ),
+    lista_ciudades: List[str] = Field(
+        default = ["Quito", "Bogota", "Cali", "Medellin"],
+        description="Lista de nombres de ciudades donde Clapzy maneja establecimientos"
+    ),
+    case_sensitive: bool = Field(
+        default=False,
+        description="Si la comparación debe ser sensible a mayúsculas/minúsculas (por defecto: False)"
+    )
+) -> dict:
+    """
+    Verifica si una ciudad específica está presente en una lista de ciudades válidas.
+
+    Parámetros:
+    - ciudad (str): Nombre de la ciudad a verificar.
+    - lista_ciudades (List[str]): Lista de nombres de ciudades válidas contra las cuales verificar.
+    - case_sensitive (bool): Si es True, la comparación será sensible a mayúsculas/minúsculas.
+                            Si es False (por defecto), la comparación será insensible a mayúsculas/minúsculas.
+
+    Retorna:
+    - dict: Diccionario con la siguiente estructura:
+        {
+            "ciudad_verificada": str,  # La ciudad que se verificó
+            "encontrada": bool,        # True si la ciudad está en la lista, False en caso contrario
+            "ciudad_exacta": str,      # El nombre exacto de la ciudad encontrada en la lista (si aplica)
+            "total_ciudades": int      # Total de ciudades en la lista de verificación
+        }
+    """
+    
+    # Validar entrada
+    if not ciudad or not ciudad.strip():
+        return {
+            "ciudad_verificada": ciudad,
+            "encontrada": False,
+            "ciudad_exacta": None,
+            "total_ciudades": len(lista_ciudades),
+            "error": "El nombre de la ciudad no puede estar vacío"
+        }
+    
+    ciudad_limpia = ciudad.strip()
+    
+    # Realizar la búsqueda
+    encontrada = False
+    ciudad_exacta = None
+    
+    if case_sensitive:
+        # Búsqueda sensible a mayúsculas/minúsculas
+        if ciudad_limpia in lista_ciudades:
+            encontrada = True
+            ciudad_exacta = ciudad_limpia
+    else:
+        # Búsqueda insensible a mayúsculas/minúsculas
+        ciudad_lower = ciudad_limpia.lower()
+        for ciudad_lista in lista_ciudades:
+            if ciudad_lista.lower() == ciudad_lower:
+                encontrada = True
+                ciudad_exacta = ciudad_lista
+                break
+    
+    return {
+        "ciudad_verificada": ciudad_limpia,
+        "encontrada": encontrada,
+        "ciudad_exacta": ciudad_exacta,
+        "total_ciudades": len(lista_ciudades)
+    }
 
 
 @mcp.tool()
