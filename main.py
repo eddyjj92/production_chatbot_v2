@@ -30,8 +30,8 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 # Conexión a Redis
 redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
-if DEVELOPMENT == 'True':
-    OPENAI_PROXY = "http://localhost:5000"
+## if DEVELOPMENT == 'True':
+    ## OPENAI_PROXY = "http://localhost:5000"
 
 # Configurar el modelo
 model = ChatOpenAI(
@@ -298,7 +298,7 @@ async def chat(req: MessageRequest, request: Request):
                 if hasattr(message, 'type') and message.type == "tool" and hasattr(message, 'name'):
                     if message.name == "recomendar_lugares_google_places":
                         tool_google_places_executed = True
-                    elif message.name == "recomendar_lugares_clapzy":
+                    elif message.name == "buscar_establecimientos_clapzy_por_ciudad":
                         tool_clapzy_executed = True
 
         # Obtener resultados de Google Places si se ejecutó en esta respuesta

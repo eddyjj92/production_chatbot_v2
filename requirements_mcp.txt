@@ -1,4 +1,4 @@
 mcp
 requests
 pydantic
-redis
+pip install redis>=4.0.0

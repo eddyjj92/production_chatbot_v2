@@ -1,5 +1,5 @@
 import json
-from email.policy import default
+import logging
 from typing import Any, Union, List
 
 from mcp.server.fastmcp import FastMCP
@@ -10,19 +10,29 @@ from dotenv import load_dotenv
 import os
 from redis import Redis
 
+# Configurar logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 DEVELOPMENT = os.getenv("DEVELOPMENT")
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
-# Conexión a Redis
-redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
+# Conexión a Redis con manejo de errores
+try:
+    redis = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True, socket_timeout=5, socket_connect_timeout=5)
+    redis.ping()
+    logger.info("✅ Redis conectado correctamente")
+except Exception as e:
+    logger.error(f"❌ Error conectando Redis: {e}")
+    redis = None
 
-if DEVELOPMENT == 'True':
+#if DEVELOPMENT == 'True':
     # Configuración de proxy si es necesario
-    os.environ['HTTP_PROXY'] = 'http://localhost:5000'
-    os.environ['HTTPS_PROXY'] = 'http://localhost:5000'
+    # os.environ['HTTP_PROXY'] = 'http://localhost:5000'
+    # bos.environ['HTTPS_PROXY'] = 'http://localhost:5000'
 
 mcp = FastMCP("mcp")
 
@@ -119,9 +129,18 @@ def recomendar_lugares_google_places(
     # Obtener los nombres de los lugares encontrados
     nombres_lugares = [lugar["displayName"]["text"] for lugar in datos["places"]]
 
-    redis.set(session_id, json.dumps(datos["places"]))
-    redis.set(f"""{session_id}_query""", query)
+    # Guardar en Redis con manejo de errores
+    if redis is not None:
+        try:
+            redis.set(session_id, json.dumps(datos["places"]), ex=3600)
+            redis.set(f"""{session_id}_query""", query, ex=3600)
+            logger.info(f"💾 Datos de Google Places guardados en Redis correctamente")
+        except Exception as e:
+            logger.error(f"❌ Error al guardar Google Places en Redis: {e}")
+    else:
+        logger.warning("⚠️ Redis no disponible para Google Places")
 
+    logger.info(f"✅ Google Places completado: {len(nombres_lugares)} lugares encontrados")
     return nombres_lugares
 
 
@@ -157,7 +176,7 @@ def verificar_ciudades_clapzy(
             "total_ciudades": int      # Total de ciudades en la lista de verificación
         }
     """
-    
+
     # Validar entrada
     if not ciudad or not ciudad.strip():
         return {
@@ -167,13 +186,13 @@ def verificar_ciudades_clapzy(
             "total_ciudades": len(lista_ciudades),
             "error": "El nombre de la ciudad no puede estar vacío"
         }
-    
+
     ciudad_limpia = ciudad.strip()
-    
+
     # Realizar la búsqueda
     encontrada = False
     ciudad_exacta = None
-    
+
     if case_sensitive:
         # Búsqueda sensible a mayúsculas/minúsculas
         if ciudad_limpia in lista_ciudades:
@@ -187,7 +206,7 @@ def verificar_ciudades_clapzy(
                 encontrada = True
                 ciudad_exacta = ciudad_lista
                 break
-    
+
     return {
         "ciudad_verificada": ciudad_limpia,
         "encontrada": encontrada,
@@ -197,63 +216,26 @@ def verificar_ciudades_clapzy(
 
 
 @mcp.tool()
-def buscar_establecimientos_clapszy_por_ciudad(
-    city: str = Field(
-        description=(
-            "Nombre de la ciudad donde buscar establecimientos. Ejemplo: 'Bogotá', 'Medellín', 'Quito', 'Cali'"
-        )
-    ),
-    session_id: str = Field(
-        description=(
-            "Cadena de texto para usar como clave en la base de datos de redis"
-        )
-    ),
-    establishment_type: str = Field(
-        description=(
-            "Cadena de texto para clasificar lugar a buscar puede ser una de estas opciones: ('Restaurante', 'Bar y cocteles', 'Música y fiesta', 'Diversión y juegos','Aventura al aire libre')"
-        )
-    ),
-    token: str = Field(
-        description=(
-            "Token de acceso a la api de Clapzy"
-        )
-    ),
-    page: int = Field(
-        default=1,
-        description=(
-            "Número de página para paginación de resultados (por defecto: 1)"
-        )
-    ),
-    limit: int = Field(
-        default=10,
-        description=(
-            "Número máximo de establecimientos a retornar por página (por defecto: 10)"
-        )
-    )
+def buscar_establecimientos_clapzy_por_ciudad(
+    city: str = Field(description="Nombre de la ciudad donde buscar establecimientos."),
+    session_id: str = Field(description="Clave para la base de datos de redis"),
+    establishment_type: str = Field(description="Tipo de establecimiento"),
+    token: str = Field(description="Token de acceso"),
+    page: int = Field(default=1, description="Número de página"),
+    limit: int = Field(default=10, description="Número máximo de resultados")
 ) -> Union[str, List[str], List[Any]]:
     """
-    Realiza una búsqueda de establecimientos en una ciudad específica utilizando la API de Clapzy,
+    Realiza una búsqueda de establecimientos en una ciudad específica utilizando la API de Clapzy
     y devuelve una lista de nombres de lugares encontrados.
-
-    Parámetros:
-    - city (str): Nombre de la ciudad donde buscar establecimientos.
-    - session_id (str): Cadena de texto para usar como clave en la base de datos de redis.
-    - establishment_type (str): Tipo de establecimiento a buscar ('Restaurante', 'Bar y cocteles', 'Música y fiesta', 'Diversión y juegos','Aventura al aire libre').
-    - token (str): Token de acceso a la api de Clapzy.
-    - page (int): Número de página para paginación (por defecto: 1).
-    - limit (int): Número máximo de resultados por página (por defecto: 10).
-
-    Retorna:
-    - Una lista de nombres de establecimientos encontrados en la ciudad especificada.
-    - Un mensaje de error si la solicitud a la API falla o si no se encuentran establecimientos.
     """
 
-    print(f"""Ciudad: {city}""")
-    print(f"""Session_id: {session_id}""")
-    print(f"""Establishment type: {establishment_type}""")
-    print(f"""Page: {page}, Limit: {limit}""")
+    logger.info(f"🚀 === INICIANDO buscar_establecimientos_clapzy_por_ciudad ===")
+    logger.info(f"🏙️  Ciudad: {city}")
+    logger.info(f"🔑 Session_id: {session_id}")
+    logger.info(f"🏪 Tipo establecimiento: {establishment_type}")
+    logger.info(f"📄 Page: {page}, Limit: {limit}")
 
-    # Definir los parámetros de la solicitud
+    # Parámetros de la solicitud
     params = {
         "city": city,
         "establishment_type": establishment_type,
@@ -261,58 +243,98 @@ def buscar_establecimientos_clapszy_por_ciudad(
         "limit": limit
     }
 
-    # Encabezados de la solicitud
+    # Cabeceras comunes
     headers = {
-        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
 
-    url = "https://backend.clapzy.pro/api/establishments/search-by-city"
+    # Endpoint base
+    url = "https://backend.clapzy.pro/api/establishments/search_by_city"
 
-    # Si el token es igual al session_id, usar acceso de invitado
+    # Si token y session_id coinciden, usamos modo invitado
     if token == session_id:
         headers["X-Guest-Access-Token"] = token
-        del headers["Authorization"]
-        url = "https://backend.clapzy.pro/api/guest/establishments/search-by-city"
-
-    # Realizar la solicitud GET
-    respuesta = requests.get(
-        url,
-        params=params,
-        headers=headers
-    )
-
-    # Verificar si la solicitud fue exitosa
-    if respuesta.status_code != 200:
-        print(f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}")
-        return f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}"
-
-    datos = respuesta.json()
-    print(f"""Datos: {datos}""")
-
-    # Verificar la estructura de la respuesta y extraer los nombres
-    if "establishments" in datos:
-        nombres_lugares = [lugar["name"] for lugar in datos["establishments"]]
-        # Guardar los datos completos en Redis
-        redis.set(f"""{session_id}_clapzy""", json.dumps(datos["establishments"]))
-    elif "data" in datos:
-        # En caso de que la respuesta tenga una estructura diferente
-        nombres_lugares = [lugar["name"] for lugar in datos["data"]]
-        redis.set(f"""{session_id}_clapzy""", json.dumps(datos["data"]))
+        url = "https://backend.clapzy.pro/api/guest/establishments/search_by_city"
+        logger.info("🎫 Usando modo INVITADO")
     else:
-        # Si no hay establecimientos o estructura desconocida
-        nombres_lugares = []
-        redis.set(f"""{session_id}_clapzy""", json.dumps([]))
+        headers["Authorization"] = f"Bearer {token}"
+        logger.info("🎫 Usando modo AUTENTICADO")
+    
+    logger.info(f"🌐 URL a llamar: {url}")
+    logger.info(f"📋 Parámetros: {params}")
+
+    try:
+        logger.info("🔄 Realizando solicitud HTTP...")
+        respuesta = requests.get(url, params=params, headers=headers, timeout=30)
+        logger.info(f"✅ Respuesta recibida con status: {respuesta.status_code}")
+        respuesta.raise_for_status()
+    except requests.exceptions.Timeout as e:
+        logger.error(f"⏰ TIMEOUT: {e}")
+        return f"Error: Timeout al conectar con la API de Clapzy - {e}"
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"🔌 CONNECTION ERROR: {e}")
+        return f"Error: No se pudo conectar con la API de Clapzy - {e}"
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"❌ HTTP ERROR: {respuesta.status_code} - {e}")
+        return f"Error HTTP en la API de Clapzy: {respuesta.status_code} - {e}"
+    except requests.exceptions.RequestException as e:
+        logger.error(f"🚨 REQUEST ERROR: {e}")
+        return f"Error general en la solicitud: {e}"
+
+    try:
+        datos = respuesta.json()
+        logger.info(f"📊 Datos JSON parseados correctamente. Claves: {list(datos.keys())}")
+    except json.JSONDecodeError as e:
+        logger.error(f"📄 ERROR JSON: {e}")
+        return f"Error: La API devolvió una respuesta que no es JSON válido - {e}"
+
+    establecimientos = []
+    if "establishments" in datos:
+        est_obj = datos["establishments"]
+        logger.info(f"🏪 Establishments encontrado, tipo: {type(est_obj)}")
+        # Si Clapzy devuelve un objeto paginado, el array está en la clave 'data'
+        if isinstance(est_obj, dict) and "data" in est_obj:
+            establecimientos = est_obj["data"]
+            logger.info(f"📄 Usando estructura paginada, {len(establecimientos)} establecimientos")
+        else:
+            establecimientos = est_obj
+            logger.info(f"🏪 Usando estructura directa, {len(establecimientos)} establecimientos")
+    elif "data" in datos:
+        establecimientos = datos["data"]
+        logger.info(f"📄 Usando clave 'data', {len(establecimientos)} establecimientos")
+    else:
+        logger.warning("❓ No se encontró estructura de datos conocida")
+
+    try:
+        nombres_lugares = [lugar.get("name", "Sin nombre") for lugar in establecimientos if isinstance(lugar, dict)]
+        logger.info(f"📋 Procesados {len(nombres_lugares)} nombres de lugares")
+    except Exception as e:
+        logger.error(f"🔥 ERROR procesando nombres: {e}")
+        return f"Error al procesar nombres de lugares: {e}"
+
+    # Guardar los establecimientos en Redis
+    if redis is not None:
+        try:
+            redis.set(f"{session_id}_clapzy", json.dumps(establecimientos), ex=3600)
+            logger.info(f"💾 Datos guardados en Redis correctamente")
+        except Exception as e:
+            logger.error(f"❌ Error al guardar en Redis: {e}")
+            # No retornar error aquí, continuar con la respuesta
+    else:
+        logger.warning("⚠️ Redis no disponible, no se pueden guardar datos")
 
     if not nombres_lugares:
+        logger.warning(f"🚫 No se encontraron establecimientos")
         return f"No se encontraron establecimientos de tipo '{establishment_type}' en la ciudad de {city}"
 
+    logger.info(f"✅ === COMPLETADO: {len(nombres_lugares)} establecimientos encontrados ===")
     return nombres_lugares
 
 
+
 @mcp.tool()
-def buscar_establecimientos_clapszy_por_coordenadas(
+def buscar_establecimientos_clapzy_por_coordenadas(
     latitude: str = Field(
         description=(
             "Latitud parte de las coordenadas asociadas al lugar donde el cliente desea salir"
@@ -355,10 +377,11 @@ def buscar_establecimientos_clapszy_por_coordenadas(
     - Un mensaje de error si la solicitud a la API falla o si no se encuentran lugares que coincidan.
     """
 
-    print(f"""Latitud: {latitude}""")
-    print(f"""Longitud: {longitude}""")
-    print(f"""Session_id: {session_id}""")
-    print(f"""Establishment type: {establishment_type}""")
+    logger.info(f"🌍 === INICIANDO buscar_establecimientos_clapzy_por_coordenadas ===")
+    logger.info(f"📍 Latitud: {latitude}")
+    logger.info(f"📍 Longitud: {longitude}")
+    logger.info(f"🔑 Session_id: {session_id}")
+    logger.info(f"🏪 Tipo establecimiento: {establishment_type}")
 
     # Definir el cuerpo de la solicitud
     cuerpo = {
@@ -381,29 +404,73 @@ def buscar_establecimientos_clapszy_por_coordenadas(
         headers["X-Guest-Access-Token"] = token
         del headers["Authorization"]
         url = "https://backend.clapzy.pro/api/guest/establishments/coordenates"
+        logger.info("🎫 Usando modo INVITADO (coordenadas)")
+    else:
+        logger.info("🎫 Usando modo AUTENTICADO (coordenadas)")
+    
+    logger.info(f"🌐 URL a llamar: {url}")
+    logger.info(f"📋 Parámetros: {cuerpo}")
 
-    # Realizar la solicitud POST
-    respuesta = requests.get(
-        url,
-        params=cuerpo,
-        headers=headers
-    )
+    try:
+        logger.info("🔄 Realizando solicitud HTTP (coordenadas)...")
+        respuesta = requests.get(url, params=cuerpo, headers=headers, timeout=30)
+        logger.info(f"✅ Respuesta recibida con status: {respuesta.status_code}")
+        respuesta.raise_for_status()
+    except requests.exceptions.Timeout as e:
+        logger.error(f"⏰ TIMEOUT (coordenadas): {e}")
+        return f"Error: Timeout al conectar con la API de Clapzy - {e}"
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"🔌 CONNECTION ERROR (coordenadas): {e}")
+        return f"Error: No se pudo conectar con la API de Clapzy - {e}"
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"❌ HTTP ERROR (coordenadas): {respuesta.status_code} - {e}")
+        return f"Error HTTP en la API de Clapzy: {respuesta.status_code} - {e}"
+    except requests.exceptions.RequestException as e:
+        logger.error(f"🚨 REQUEST ERROR (coordenadas): {e}")
+        return f"Error general en la solicitud: {e}"
 
-    # Verificar si la solicitud fue exitosa
-    if respuesta.status_code != 200:
-        print(f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}")
-        return f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}"
+    try:
+        datos = respuesta.json()
+        logger.info(f"📊 Datos JSON parseados correctamente (coordenadas). Claves: {list(datos.keys())}")
+    except json.JSONDecodeError as e:
+        logger.error(f"📄 ERROR JSON (coordenadas): {e}")
+        return f"Error: La API devolvió una respuesta que no es JSON válido - {e}"
 
-    datos = respuesta.json()
-    print(f"""Datos: {datos}""")
+    # Verificar estructura y obtener establecimientos
+    if "establishments" not in datos:
+        logger.error("❌ No se encontró clave 'establishments' en respuesta (coordenadas)")
+        return "No se encontraron establecimientos en la respuesta de la API"
+    
+    establecimientos = datos["establishments"]
+    logger.info(f"🏪 Establecimientos encontrados (coordenadas): {len(establecimientos)}")
 
-    # Obtener los nombres de los lugares encontrados
-    nombres_lugares = [lugar["name"] for lugar in datos["establishments"]]
+    try:
+        nombres_lugares = [lugar.get("name", "Sin nombre") for lugar in establecimientos if isinstance(lugar, dict)]
+        logger.info(f"📋 Procesados {len(nombres_lugares)} nombres de lugares (coordenadas)")
+    except Exception as e:
+        logger.error(f"🔥 ERROR procesando nombres (coordenadas): {e}")
+        return f"Error al procesar nombres de lugares: {e}"
 
-    redis.set(f"""{session_id}_clapzy""", json.dumps(datos["establishments"]))
+    # Guardar en Redis
+    if redis is not None:
+        try:
+            redis.set(f"""{session_id}_clapzy""", json.dumps(establecimientos), ex=3600)
+            logger.info(f"💾 Datos guardados en Redis correctamente (coordenadas)")
+        except Exception as e:
+            logger.error(f"❌ Error al guardar en Redis (coordenadas): {e}")
+            # No retornar error aquí, continuar con la respuesta
+    else:
+        logger.warning("⚠️ Redis no disponible (coordenadas)")
 
+    if not nombres_lugares:
+        logger.warning(f"🚫 No se encontraron establecimientos (coordenadas)")
+        return f"No se encontraron establecimientos de tipo '{establishment_type}' en las coordenadas especificadas"
+
+    logger.info(f"✅ === COMPLETADO (coordenadas): {len(nombres_lugares)} establecimientos encontrados ===")
     return nombres_lugares
 
 
 if __name__ == "__main__":
+    logger.info("🚀 === INICIANDO MCP SERVER ===")
+    logger.info("📡 Transporte: STDIO")
     mcp.run(transport="stdio")

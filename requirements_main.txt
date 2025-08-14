@@ -2,4 +2,4 @@ fastapi
 langchain_openai
 langchain_mcp_adapters
 langgraph
-redis
+pip install redis>=4.0.0
