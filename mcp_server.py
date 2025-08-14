@@ -131,7 +131,7 @@ def verificar_ciudades_clapzy(
         description="Nombre de la ciudad a verificar"
     ),
     lista_ciudades: List[str] = Field(
-        default = ["Quito", "Bogota", "Cali", "Medellin"],
+        default = ["Quito", "Bogotá", "Medellín", "Cali"],
         description="Lista de nombres de ciudades donde Clapzy maneja establecimientos"
     ),
     case_sensitive: bool = Field(
@@ -197,7 +197,122 @@ def verificar_ciudades_clapzy(
 
 
 @mcp.tool()
-def recomendar_lugares_clapzy(
+def buscar_establecimientos_clapszy_por_ciudad(
+    city: str = Field(
+        description=(
+            "Nombre de la ciudad donde buscar establecimientos. Ejemplo: 'Bogotá', 'Medellín', 'Quito', 'Cali'"
+        )
+    ),
+    session_id: str = Field(
+        description=(
+            "Cadena de texto para usar como clave en la base de datos de redis"
+        )
+    ),
+    establishment_type: str = Field(
+        description=(
+            "Cadena de texto para clasificar lugar a buscar puede ser una de estas opciones: ('Restaurante', 'Bar y cocteles', 'Música y fiesta', 'Diversión y juegos','Aventura al aire libre')"
+        )
+    ),
+    token: str = Field(
+        description=(
+            "Token de acceso a la api de Clapzy"
+        )
+    ),
+    page: int = Field(
+        default=1,
+        description=(
+            "Número de página para paginación de resultados (por defecto: 1)"
+        )
+    ),
+    limit: int = Field(
+        default=10,
+        description=(
+            "Número máximo de establecimientos a retornar por página (por defecto: 10)"
+        )
+    )
+) -> Union[str, List[str], List[Any]]:
+    """
+    Realiza una búsqueda de establecimientos en una ciudad específica utilizando la API de Clapzy,
+    y devuelve una lista de nombres de lugares encontrados.
+
+    Parámetros:
+    - city (str): Nombre de la ciudad donde buscar establecimientos.
+    - session_id (str): Cadena de texto para usar como clave en la base de datos de redis.
+    - establishment_type (str): Tipo de establecimiento a buscar ('Restaurante', 'Bar y cocteles', 'Música y fiesta', 'Diversión y juegos','Aventura al aire libre').
+    - token (str): Token de acceso a la api de Clapzy.
+    - page (int): Número de página para paginación (por defecto: 1).
+    - limit (int): Número máximo de resultados por página (por defecto: 10).
+
+    Retorna:
+    - Una lista de nombres de establecimientos encontrados en la ciudad especificada.
+    - Un mensaje de error si la solicitud a la API falla o si no se encuentran establecimientos.
+    """
+
+    print(f"""Ciudad: {city}""")
+    print(f"""Session_id: {session_id}""")
+    print(f"""Establishment type: {establishment_type}""")
+    print(f"""Page: {page}, Limit: {limit}""")
+
+    # Definir los parámetros de la solicitud
+    params = {
+        "city": city,
+        "establishment_type": establishment_type,
+        "page": page,
+        "limit": limit
+    }
+
+    # Encabezados de la solicitud
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    url = "https://backend.clapzy.pro/api/establishments/search-by-city"
+
+    # Si el token es igual al session_id, usar acceso de invitado
+    if token == session_id:
+        headers["X-Guest-Access-Token"] = token
+        del headers["Authorization"]
+        url = "https://backend.clapzy.pro/api/guest/establishments/search-by-city"
+
+    # Realizar la solicitud GET
+    respuesta = requests.get(
+        url,
+        params=params,
+        headers=headers
+    )
+
+    # Verificar si la solicitud fue exitosa
+    if respuesta.status_code != 200:
+        print(f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}")
+        return f"Error en la solicitud: {respuesta.status_code} - {respuesta.text}"
+
+    datos = respuesta.json()
+    print(f"""Datos: {datos}""")
+
+    # Verificar la estructura de la respuesta y extraer los nombres
+    if "establishments" in datos:
+        nombres_lugares = [lugar["name"] for lugar in datos["establishments"]]
+        # Guardar los datos completos en Redis
+        redis.set(f"""{session_id}_city_search""", json.dumps(datos["establishments"]))
+    elif "data" in datos:
+        # En caso de que la respuesta tenga una estructura diferente
+        nombres_lugares = [lugar["name"] for lugar in datos["data"]]
+        redis.set(f"""{session_id}_city_search""", json.dumps(datos["data"]))
+    else:
+        # Si no hay establecimientos o estructura desconocida
+        nombres_lugares = []
+        redis.set(f"""{session_id}_city_search""", json.dumps([]))
+
+    if not nombres_lugares:
+        return f"No se encontraron establecimientos de tipo '{establishment_type}' en la ciudad de {city}"
+
+    return nombres_lugares
+
+
+@mcp.tool()
+def buscar_establecimientos_clapszy_por_coordenadas(
     latitude: str = Field(
         description=(
             "Latitud parte de las coordenadas asociadas al lugar donde el cliente desea salir"
