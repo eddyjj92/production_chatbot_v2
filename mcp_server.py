@@ -295,15 +295,15 @@ def buscar_establecimientos_clapszy_por_ciudad(
     if "establishments" in datos:
         nombres_lugares = [lugar["name"] for lugar in datos["establishments"]]
         # Guardar los datos completos en Redis
-        redis.set(f"""{session_id}_city_search""", json.dumps(datos["establishments"]))
+        redis.set(f"""{session_id}_clapzy""", json.dumps(datos["establishments"]))
     elif "data" in datos:
         # En caso de que la respuesta tenga una estructura diferente
         nombres_lugares = [lugar["name"] for lugar in datos["data"]]
-        redis.set(f"""{session_id}_city_search""", json.dumps(datos["data"]))
+        redis.set(f"""{session_id}_clapzy""", json.dumps(datos["data"]))
     else:
         # Si no hay establecimientos o estructura desconocida
         nombres_lugares = []
-        redis.set(f"""{session_id}_city_search""", json.dumps([]))
+        redis.set(f"""{session_id}_clapzy""", json.dumps([]))
 
     if not nombres_lugares:
         return f"No se encontraron establecimientos de tipo '{establishment_type}' en la ciudad de {city}"
